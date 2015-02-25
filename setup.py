@@ -15,8 +15,6 @@ setup(
     url='https://github.com/openfun/fun-cmd.git',
     license='MIT',
     packages=find_packages(),
-    include_package_data=True,
-    zip_safe=False,
     entry_points={
         'console_scripts': [
             'fun = funcmd.cmd:fun',
