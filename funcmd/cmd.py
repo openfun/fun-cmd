@@ -16,7 +16,7 @@ def fun():
         if "--fast" in django_args:
             django_args.remove('--fast')
         else:
-            update_assets(settings, service)
+            update_assets()
         port = 8000 if service == "lms" else 8001
         command = ['manage.py', 'runserver', '--traceback', '0.0.0.0:{}'.format(port)] + django_args[1:]
     else:
