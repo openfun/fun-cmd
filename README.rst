@@ -28,11 +28,19 @@ Start a shell::
 
     fun lms.dev shell
 
-Start an lms instance::
+Install requirements (including FUN requirements)::
+
+    fun lms.dev requirements
+
+Process assets, static collection::
+
+    fun lms.dev assets
+
+Install requirements, process assets and start an lms instance::
 
     fun lms.dev run
 
-If you don't wish to update all assets::
+If you just want to run the lms instance::
 
     fun lms.dev run --fast
 

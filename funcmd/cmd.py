@@ -93,14 +93,27 @@ def get_manage_command_arguments(settings, service, *args):
             install_prerequirements()
             update_assets()
         port = 8000 if service == "lms" else 8001
-        manage_command = ['runserver', '--traceback', '0.0.0.0:{}'.format(port)] + args[1:]
+        return ['runserver', '--traceback', '0.0.0.0:{}'.format(port)] + args[1:]
+    elif args[0] == "assets":
+        update_assets()
+        return None
+    elif args[0] == "requirements":
+        install_prerequirements()
+        return None
     else:
-        manage_command = args
-    return manage_command
+        return args
 
 def install_prerequirements():
     import pavelib.prereqs
     pavelib.prereqs.install_prereqs()
+    fun_requirements = [
+        "../fun-apps/requirements/base.txt",
+        "../fun-apps/requirements/dm-xblock.txt",
+        "../fun-apps/requirements/dev.txt",
+    ]
+    pavelib.prereqs.prereq_cache("FUN prereqs",
+                                 fun_requirements,
+                                 pavelib.prereqs.python_prereqs_installation)
 
 def update_assets():
     """Run asset preprocessing, compilation, collection."""
