@@ -14,7 +14,8 @@ def fun():
     run_command(settings, service, fun_args, other_args)
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Run FUN services")
+    parser = argparse.ArgumentParser(description="Run FUN services", add_help=False)
+    parser.add_argument("-h", "--help", action="store_true", help='show this help message and exit')
     parser.add_argument(
         "settings",
         help=("Settings module to use. If it starts with 'edx', it will be"
@@ -27,6 +28,10 @@ def parse_args():
     )
 
     fun_args, other_args = parser.parse_known_args()
+    if fun_args.help:
+        parser.print_help()
+        print "========================"
+        other_args.append("--help")
     return fun_args, other_args
 
 def get_environment(partial_settings):
