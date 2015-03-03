@@ -120,5 +120,5 @@ def update_assets():
 def execute_manage_command(*arguments):
     """Run manage.py command"""
     import django.core.management
-    django.core.management.execute_from_command_line(["manage.py"] + arguments)
+    django.core.management.execute_from_command_line(["manage.py"] + list(arguments))
 
