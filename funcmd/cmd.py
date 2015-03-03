@@ -8,35 +8,10 @@ import os
 import sys
 
 def fun():
-    fun_args, django_args = parse_args()
+    fun_args, other_args = parse_args()
     settings, service = get_environment(fun_args.settings)
     setup_environment(settings, service)
-
-    if django_args[0] == "run":
-        if "--fast" in django_args:
-            django_args.remove('--fast')
-        else:
-            update_assets()
-        port = 8000 if service == "lms" else 8001
-        command = ['manage.py', 'runserver', '--traceback', '0.0.0.0:{}'.format(port)] + django_args[1:]
-    else:
-        command = ['manage.py'] + django_args
-    execute_from_command_line(command)
-
-def execute_from_command_line(command):
-    import django.core.management
-    django.core.management.execute_from_command_line(command)
-
-def update_assets():
-    import pavelib.assets
-
-    # Compile templated SASS (compile_templated_sass)
-    print "---> preprocess_assets"
-    execute_from_command_line(["manage.py", "preprocess_assets"])
-
-    pavelib.assets.process_xmodule_assets()
-    pavelib.assets.compile_coffeescript()
-    pavelib.assets.compile_sass(False)
+    run_command(settings, service, fun_args, other_args)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run FUN services")
@@ -51,15 +26,21 @@ def parse_args():
               "settings module.")
     )
 
-    fun_args, django_args = parser.parse_known_args()
-    return fun_args, django_args
+    fun_args, other_args = parser.parse_known_args()
+    return fun_args, other_args
 
 def get_environment(partial_settings):
+    """Get the full settings python path and the service to run.
+
+    Returns:
+        settings (str): python path pointing to the correct settings module.
+        service (str): "lms" or "cms"
+    """
     service = get_service(partial_settings)
 
     if partial_settings.startswith('edx.'):
         settings = "{service}.envs.{env}"
-        env = partial_settings[4:]
+        env = partial_settings.split('.')[-1]
     elif partial_settings.startswith('prod.'):
         settings = "funconfig.{env}"
         env = partial_settings[5:]
@@ -70,6 +51,11 @@ def get_environment(partial_settings):
     return settings, service
 
 def get_service(settings):
+    """Get the service to run based on incomplete settings.
+
+    Returns:
+        service (str): "lms" or "cms"
+    """
     if 'lms' in settings:
         return 'lms'
     elif 'cms' in settings:
@@ -78,6 +64,7 @@ def get_service(settings):
         raise ValueError("Could not determine the service variant to use")
 
 def setup_environment(settings, service):
+    """Setup the sys.path and the environment variables required for the given service."""
     sys.path.insert(0, '/edx/app/edxapp/edx-platform')
     sys.path.append('/edx/app/edxapp/fun-apps')
 
@@ -87,3 +74,46 @@ def setup_environment(settings, service):
     startup_module = "{service}.startup".format(service=service)
     startup = importlib.import_module(startup_module)
     startup.run()
+
+def run_command(settings, service, fun_args, other_args):
+    """Run appropriate command for the given settings and service."""
+    arguments = get_manage_command_arguments(settings, service, *other_args)
+    if arguments:
+        execute_manage_command(*arguments)
+
+def get_manage_command_arguments(settings, service, *args):
+    """Get arguments to pass to manage.py. Update assets if necessary."""
+    if not args:
+        return None
+    args = list(args)
+    if args[0] == "run":
+        if "--fast" in args:
+            args.remove('--fast')
+        else:
+            update_assets(settings, service)
+        port = 8000 if service == "lms" else 8001
+        manage_command = ['runserver', '--traceback', '0.0.0.0:{}'.format(port)] + args[1:]
+    else:
+        manage_command = args
+    return manage_command
+
+def update_assets(settings, service):
+    """Run asset preprocessing, compilation, collection."""
+
+    # Compile templated SASS (compile_templated_sass)
+    print "---> preprocess_assets"
+    execute_manage_command("preprocess_assets")
+
+    import pavelib.assets
+    pavelib.assets.process_xmodule_assets()
+    pavelib.assets.compile_coffeescript()
+    pavelib.assets.compile_sass(False)
+
+    # Asset collection
+    execute_manage_command("collectstatic", "--noinput")
+
+def execute_manage_command(*arguments):
+    """Run manage.py command"""
+    import django.core.management
+    django.core.management.execute_from_command_line(["manage.py"] + arguments)
+

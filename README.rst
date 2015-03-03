@@ -2,7 +2,16 @@
 FUN-CMD
 =======
 
-A command-line tool for OpenFUN.
+A command-line tool for OpenFUN. fun-cmd was designed as a helpful tool to run
+frequently-used OpendEdx commands in development and test modes.
+
+Install
+=======
+
+You should install fun-cmd in your OpenEdx virtual box::
+
+    pip install git+https://github.com/openfun/fun-cmd.git@master#egg=fun-cmd
+
 
 Available commands
 ==================
@@ -26,3 +35,10 @@ Start an lms instance::
 If you don't wish to update all assets::
 
     fun lms.dev run --fast
+
+Contribute
+==========
+
+Don't forget to run (and write) tests::
+
+    nosetests
