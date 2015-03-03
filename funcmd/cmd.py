@@ -90,14 +90,19 @@ def get_manage_command_arguments(settings, service, *args):
         if "--fast" in args:
             args.remove('--fast')
         else:
-            update_assets(settings, service)
+            install_prerequirements()
+            update_assets()
         port = 8000 if service == "lms" else 8001
         manage_command = ['runserver', '--traceback', '0.0.0.0:{}'.format(port)] + args[1:]
     else:
         manage_command = args
     return manage_command
 
-def update_assets(settings, service):
+def install_prerequirements():
+    import pavelib.prereqs
+    pavelib.prereqs.install_prereqs()
+
+def update_assets():
     """Run asset preprocessing, compilation, collection."""
 
     # Compile templated SASS (compile_templated_sass)
