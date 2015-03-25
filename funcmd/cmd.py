@@ -92,13 +92,9 @@ def get_manage_command_arguments(settings, service, *args):
         return None
     args = list(args)
     if args[0] == "run":
-        if "--fast" in args:
-            args.remove('--fast')
-        else:
-            install_prerequirements()
-            update_assets()
+        preprocess_runserver_arguments(args)
         port = 8000 if service == "lms" else 8001
-        return ['runserver', '--traceback', '0.0.0.0:{}'.format(port)] + args[1:]
+        return ['runserver', '--traceback', '--skip-collect', '0.0.0.0:{}'.format(port)] + args[1:]
     elif args[0] == "assets":
         update_assets()
         return None
@@ -107,6 +103,17 @@ def get_manage_command_arguments(settings, service, *args):
         return None
     else:
         return args
+
+def preprocess_runserver_arguments(args):
+    """
+    Install prerequirements and update assets only if the server is not reloading.
+    """
+    if "--fast" in args:
+        args.remove('--fast')
+    else:
+        if os.environ.get("RUN_MAIN") is None:
+            install_prerequirements()
+            update_assets()
 
 def install_prerequirements():
     import pavelib.prereqs
