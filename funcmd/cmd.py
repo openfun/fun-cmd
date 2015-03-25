@@ -94,7 +94,7 @@ def get_manage_command_arguments(settings, service, *args):
     if args[0] == "run":
         preprocess_runserver_arguments(args)
         port = 8000 if service == "lms" else 8001
-        return ['runserver', '--traceback', '--skip-collect', '0.0.0.0:{}'.format(port)] + args[1:]
+        return ['runserver', '--traceback', '0.0.0.0:{}'.format(port)] + args[1:]
     elif args[0] == "assets":
         update_assets()
         return None
