@@ -117,15 +117,16 @@ def preprocess_runserver_arguments(args):
 
 def install_prerequirements():
     import pavelib.prereqs
-    pavelib.prereqs.install_prereqs()
-    fun_requirements = [
+    PYTHON_REQ_FILES = [
         "../fun-apps/requirements/base.txt",
         "../fun-apps/requirements/dm-xblock.txt",
         "../fun-apps/requirements/dev.txt",
-    ]
-    pavelib.prereqs.prereq_cache("FUN prereqs",
-                                 fun_requirements,
-                                 pavelib.prereqs.python_prereqs_installation)
+    ] + pavelib.prereqs.PYTHON_REQ_FILES
+    def install_edx_and_fun_requirements():
+        from paver.easy import sh
+        for req_file in PYTHON_REQ_FILES:
+            sh("pip install -q --exists-action w -r {req_file}".format(req_file=req_file))
+    pavelib.prereqs.prereq_cache("Python prereqs", PYTHON_REQ_FILES, install_edx_and_fun_requirements)
 
 def update_assets():
     """Run asset preprocessing, compilation, collection."""
