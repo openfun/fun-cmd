@@ -117,11 +117,11 @@ def preprocess_runserver_arguments(args):
 
 def install_prerequirements():
     import pavelib.prereqs
-    PYTHON_REQ_FILES = [
+    PYTHON_REQ_FILES = pavelib.prereqs.PYTHON_REQ_FILES + [
         "../fun-apps/requirements/base.txt",
         "../fun-apps/requirements/dm-xblock.txt",
         "../fun-apps/requirements/dev.txt",
-    ] + pavelib.prereqs.PYTHON_REQ_FILES
+    ]
     def install_edx_and_fun_requirements():
         from paver.easy import sh
         for req_file in PYTHON_REQ_FILES:
