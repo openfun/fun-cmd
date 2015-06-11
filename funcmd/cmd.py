@@ -119,7 +119,6 @@ def install_prerequirements():
     import pavelib.prereqs
     PYTHON_REQ_FILES = pavelib.prereqs.PYTHON_REQ_FILES + [
         "../fun-apps/requirements/base.txt",
-        "../fun-apps/requirements/dm-xblock.txt",
         "../fun-apps/requirements/dev.txt",
     ]
     def install_edx_and_fun_requirements():
