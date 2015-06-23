@@ -101,8 +101,9 @@ def get_manage_command_arguments(settings, service, *args):
     elif args[0] == "requirements":
         install_prerequirements()
         return None
-    else:
-        return args
+    elif args[0] == "test":
+        check_test_settings(settings)
+    return args
 
 def preprocess_runserver_arguments(args):
     """
@@ -141,6 +142,12 @@ def update_assets():
 
     # Asset collection
     execute_manage_command("collectstatic", "--noinput")
+
+def check_test_settings(settings):
+    if "test" not in settings:
+        print ("""Trying to run tests with non-test settings."""
+               """ It's dangerous and you probably don't want to do that.""")
+        sys.exit(1)
 
 def execute_manage_command(*arguments):
     """Run manage.py command"""
