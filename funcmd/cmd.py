@@ -10,7 +10,6 @@ import sys
 def fun():
     fun_args, other_args = parse_args()
     settings, service = get_environment(fun_args.settings)
-    setup_environment(settings, service)
     run_command(settings, service, fun_args, other_args)
 
 def parse_args():
@@ -68,18 +67,6 @@ def get_service(settings):
     else:
         raise ValueError("Could not determine the service variant to use")
 
-def setup_environment(settings, service):
-    """Setup the sys.path and the environment variables required for the given service."""
-    sys.path.insert(0, '/edx/app/edxapp/edx-platform')
-    sys.path.append('/edx/app/edxapp/fun-apps')
-
-    os.environ["DJANGO_SETTINGS_MODULE"] = settings
-    os.environ.setdefault("SERVICE_VARIANT", service)
-
-    startup_module = "{service}.startup".format(service=service)
-    startup = importlib.import_module(startup_module)
-    startup.run()
-
 def run_command(settings, service, fun_args, other_args):
     """Run appropriate command for the given settings and service."""
     arguments = get_manage_command_arguments(settings, service, *other_args)
@@ -91,6 +78,14 @@ def get_manage_command_arguments(settings, service, *args):
     if not args:
         return None
     args = list(args)
+
+    if args[0] == "requirements":
+        install_prerequirements()
+        return None
+
+    # No need to setup environment to install requirements
+    setup_environment(settings, service)
+
     if args[0] == "run":
         preprocess_runserver_arguments(args)
         port = 8000 if service == "lms" else 8001
@@ -98,23 +93,9 @@ def get_manage_command_arguments(settings, service, *args):
     elif args[0] == "assets":
         update_assets()
         return None
-    elif args[0] == "requirements":
-        install_prerequirements()
-        return None
     elif args[0] == "test":
         check_test_settings(settings)
     return args
-
-def preprocess_runserver_arguments(args):
-    """
-    Install prerequirements and update assets only if the server is not reloading.
-    """
-    if "--fast" in args:
-        args.remove('--fast')
-    else:
-        if os.environ.get("RUN_MAIN") is None:
-            install_prerequirements()
-            update_assets()
 
 def install_prerequirements():
     import pavelib.prereqs
@@ -127,6 +108,29 @@ def install_prerequirements():
         for req_file in PYTHON_REQ_FILES:
             sh("pip install -q --exists-action w -r {req_file}".format(req_file=req_file))
     pavelib.prereqs.prereq_cache("Python prereqs", PYTHON_REQ_FILES, install_edx_and_fun_requirements)
+
+def setup_environment(settings, service):
+    """Setup the sys.path and the environment variables required for the given service."""
+    sys.path.insert(0, '/edx/app/edxapp/edx-platform')
+    sys.path.append('/edx/app/edxapp/fun-apps')
+
+    os.environ["DJANGO_SETTINGS_MODULE"] = settings
+    os.environ.setdefault("SERVICE_VARIANT", service)
+
+    startup_module = "{service}.startup".format(service=service)
+    startup = importlib.import_module(startup_module)
+    startup.run()
+
+def preprocess_runserver_arguments(args):
+    """
+    Install prerequirements and update assets only if the server is not reloading.
+    """
+    if "--fast" in args:
+        args.remove('--fast')
+    else:
+        if os.environ.get("RUN_MAIN") is None:
+            install_prerequirements()
+            update_assets()
 
 def update_assets():
     """Run asset preprocessing, compilation, collection."""
