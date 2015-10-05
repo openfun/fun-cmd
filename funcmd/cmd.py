@@ -79,12 +79,14 @@ def get_manage_command_arguments(settings, service, *args):
         return None
     args = list(args)
 
+    setup_environment()
+
     if args[0] == "requirements":
         install_prerequirements()
         return None
 
-    # No need to setup environment to install requirements
-    setup_environment(settings, service)
+    # No need to setup django environment to install requirements
+    setup_django_environment(settings, service)
 
     if args[0] == "run":
         preprocess_runserver_arguments(args)
@@ -109,11 +111,15 @@ def install_prerequirements():
             sh("pip install -q --exists-action w -r {req_file}".format(req_file=req_file))
     pavelib.prereqs.prereq_cache("Python prereqs", PYTHON_REQ_FILES, install_edx_and_fun_requirements)
 
-def setup_environment(settings, service):
-    """Setup the sys.path and the environment variables required for the given service."""
+def setup_environment():
+    """Setup the sys.path."""
     sys.path.insert(0, '/edx/app/edxapp/edx-platform')
     sys.path.append('/edx/app/edxapp/fun-apps')
 
+
+def setup_django_environment(settings, service):
+    """Setup the environment variables required for the given service and run
+    appropriate startup script."""
     os.environ["DJANGO_SETTINGS_MODULE"] = settings
     os.environ.setdefault("SERVICE_VARIANT", service)
 
