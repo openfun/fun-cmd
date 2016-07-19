@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from .tools import defuse_xml, disable_contracts
 defuse_xml()# This must be done early
 disable_contracts()
@@ -11,6 +12,7 @@ def fun():
     fun_args, other_args = parse_args()
     settings, service = get_environment(fun_args.settings)
     run_command(settings, service, fun_args, other_args)
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Run FUN services", add_help=False)
@@ -33,6 +35,7 @@ def parse_args():
         other_args.append("--help")
     return fun_args, other_args
 
+
 def get_environment(partial_settings):
     """Get the full settings python path and the service to run.
 
@@ -54,6 +57,7 @@ def get_environment(partial_settings):
     settings = settings.format(service=service, env=env)
     return settings, service
 
+
 def get_service(settings):
     """Get the service to run based on incomplete settings.
 
@@ -67,11 +71,13 @@ def get_service(settings):
     else:
         raise ValueError("Could not determine the service variant to use")
 
+
 def run_command(settings, service, fun_args, other_args):
     """Run appropriate command for the given settings and service."""
     arguments = get_manage_command_arguments(settings, service, *other_args)
     if arguments:
         execute_manage_command(*arguments)
+
 
 def get_manage_command_arguments(settings, service, *args):
     """Get arguments to pass to manage.py. Update assets if necessary."""
@@ -79,25 +85,24 @@ def get_manage_command_arguments(settings, service, *args):
         return None
     args = list(args)
 
-    setup_environment()
-
     if args[0] == "requirements":
         install_prerequirements()
         return None
 
-    # No need to setup django environment to install requirements
-    setup_django_environment(settings, service)
+    # No need to setup environment to install requirements
+    setup_environment(settings, service)
 
     if args[0] == "run":
-        preprocess_runserver_arguments(args)
+        preprocess_runserver_arguments(service, args)
         port = 8000 if service == "lms" else 8001
         return ['runserver', '--traceback', '0.0.0.0:{}'.format(port)] + args[1:]
     elif args[0] == "assets":
-        update_assets()
+        update_assets(service)
         return None
     elif args[0] == "test":
         check_test_settings(settings)
     return args
+
 
 def install_prerequirements():
     import pavelib.prereqs
@@ -105,21 +110,18 @@ def install_prerequirements():
         "../fun-apps/requirements/base.txt",
         "../fun-apps/requirements/dev.txt",
     ]
+
     def install_edx_and_fun_requirements():
         from paver.easy import sh
         for req_file in PYTHON_REQ_FILES:
             sh("pip install -q --exists-action w -r {req_file}".format(req_file=req_file))
     pavelib.prereqs.prereq_cache("Python prereqs", PYTHON_REQ_FILES, install_edx_and_fun_requirements)
 
-def setup_environment():
-    """Setup the sys.path."""
+def setup_environment(settings, service):
+    """Setup the sys.path and the environment variables required for the given service."""
     sys.path.insert(0, '/edx/app/edxapp/edx-platform')
     sys.path.append('/edx/app/edxapp/fun-apps')
 
-
-def setup_django_environment(settings, service):
-    """Setup the environment variables required for the given service and run
-    appropriate startup script."""
     os.environ["DJANGO_SETTINGS_MODULE"] = settings
     os.environ.setdefault("SERVICE_VARIANT", service)
 
@@ -127,7 +129,8 @@ def setup_django_environment(settings, service):
     startup = importlib.import_module(startup_module)
     startup.run()
 
-def preprocess_runserver_arguments(args):
+
+def preprocess_runserver_arguments(service, args):
     """
     Install prerequirements and update assets only if the server is not reloading.
     """
@@ -136,14 +139,19 @@ def preprocess_runserver_arguments(args):
     else:
         if os.environ.get("RUN_MAIN") is None:
             install_prerequirements()
-            update_assets()
+            update_assets(service)
 
-def update_assets():
+
+def update_assets(service):
     """Run asset preprocessing, compilation, collection."""
 
     # Compile templated SASS (compile_templated_sass)
     print "---> preprocess_assets"
-    execute_manage_command("preprocess_assets")
+    execute_manage_command(
+        "preprocess_assets",
+        '{sys}/static/sass/*.scss'.format(sys=service),
+        '{sys}/static/themed_sass'.format(sys=service)
+    )
 
     import pavelib.assets
     pavelib.assets.process_xmodule_assets()
@@ -153,14 +161,15 @@ def update_assets():
     # Asset collection
     execute_manage_command("collectstatic", "--noinput")
 
+
 def check_test_settings(settings):
     if "test" not in settings:
         print ("""Trying to run tests with non-test settings."""
                """ It's dangerous and you probably don't want to do that.""")
         sys.exit(1)
 
+
 def execute_manage_command(*arguments):
     """Run manage.py command"""
     import django.core.management
     django.core.management.execute_from_command_line(["manage.py"] + list(arguments))
-
