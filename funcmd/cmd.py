@@ -111,11 +111,15 @@ def install_prerequirements():
         "../fun-apps/requirements/dev.txt",
     ]
 
+    # Install python requirements
     def install_edx_and_fun_requirements():
         from paver.easy import sh
         for req_file in PYTHON_REQ_FILES:
             sh("pip install -q --exists-action w -r {req_file}".format(req_file=req_file))
     pavelib.prereqs.prereq_cache("Python prereqs", PYTHON_REQ_FILES, install_edx_and_fun_requirements)
+
+    # Update npm requirements
+    pavelib.prereqs.node_prereqs_installation()
 
 def setup_environment(settings, service):
     """Setup the sys.path and the environment variables required for the given service."""
